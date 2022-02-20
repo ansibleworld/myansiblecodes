@@ -1,0 +1,21 @@
+web01 ansible_host=172.31.91.154
+web02 ansible_host=172.31.83.2
+web03 ansible_host=172.31.80.61 ansible_user=ubuntu
+db01 ansible_host=172.31.94.178
+
+[webgrp]
+web01
+web02
+web03
+
+[dbgrp]
+db01
+
+[commongrp:children]
+webgrp
+dbgrp
+
+[commongrp:vars]
+ansible_user=centos
+ansible_ssh_private_key_file=./projectkey.pem
+

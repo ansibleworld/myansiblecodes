@@ -1,0 +1,63 @@
+---
+# tasks file for mysetup
+
+      - name: installing ntp server
+        yum:
+                name: "{{item}}"
+                state: present
+        when: ansible_distribution == "CentOS"
+        loop:
+                        - ntp
+                        - wget
+                        - unzip
+                        - zip
+                        - tree
+
+
+      - name: installing ntp server for ubuntu
+        apt:
+                name: "{{item}}"
+                state: present
+                update_cache: yes
+        when: ansible_distribution == "Ubuntu"
+        loop:
+                        - ntp
+                        - wget
+                        - unzip
+                        - zip
+                        - tree
+
+
+      - name: starting and enabling svc
+        service:
+               name: ntpd
+               state: started
+               enabled: yes
+        when: ansible_distribution == "CentOS"
+
+
+      - name: starting and enabling ntp server in ubuntu
+        service:
+                name: ntp
+                state: started
+                enabled: yes
+        when: ansible_distribution == "Ubuntu"
+		  - name: Copying ntp configuration file
+        copy:
+              src: files/ntp.conf_centos
+              dest: /etc/ntp.conf
+              backup: yes
+        when: ansible_distribution == "CentOS"
+        notify:
+                - restarting ntp service
+
+      - name: copying ntp configuration file to ubuntu
+        copy:
+              src: files/ntp.conf_ubuntu
+              dest: /etc/ntp.conf
+              backup: yes
+        when: ansible_distribution == "Ubuntu"
+        notify:
+                - restarting ntp service for ubuntu
+
+

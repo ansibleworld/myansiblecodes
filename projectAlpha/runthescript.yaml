@@ -1,0 +1,11 @@
+---
+- name: running the script
+  hosts: all
+  become: yes
+  tasks:
+          - name: pushing the script
+            script: /home/ubuntu/projectAlpha/runscript.sh
+               chdir: /tmp/files
+            args:
+                 executable: /tmp/files
+                 ignore_errors: true 

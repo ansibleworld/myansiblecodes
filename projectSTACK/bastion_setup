@@ -1,0 +1,4 @@
+bastion_ami: "ami-033b95fb8079dc481"
+region: us-east-1
+MYIP: "172.20.1.7/32"
+

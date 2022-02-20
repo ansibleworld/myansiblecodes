@@ -1,0 +1,19 @@
+- name: print fact vars
+  hosts: all
+  tasks:
+          - name: print arch name
+            debug:
+               var: ansible_architecture 
+
+          - name: print os name 
+            debug:
+                     var: ansible_distribution 
+
+          - name: print date and time 
+            debug:
+                      var: ansible_date_time.date
+                      var: ansible_date_time.time
+
+          - name: print interface name
+            debug:
+                       var: ansible_interface[1]

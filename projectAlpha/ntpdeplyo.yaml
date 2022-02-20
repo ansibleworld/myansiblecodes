@@ -1,0 +1,87 @@
+---
+
+- name: setup ntp server 
+  hosts: all
+  become: yes
+  tasks:
+          - name: installing ntp server
+            yum:
+                    name: "{{item}}"
+                    state: present 
+            when: ansible_distribution == "CentOS"
+            loop:
+                            - ntp
+                            - wget
+                            - unzip
+                            - zip
+                            - tree
+       
+
+          - name: installing ntp server for ubuntu
+            apt:
+                    name: "{{item}}"
+                    state: present
+                    update_cache: yes
+            when: ansible_distribution == "Ubuntu"
+            loop:
+                            - ntp
+                            - wget
+                            - unzip
+                            - zip
+                            - tree
+
+
+          - name: starting and enabling svc
+            service:
+                   name: ntpd
+                   state: started
+                   enabled: yes
+            when: ansible_distribution == "CentOS"
+        
+
+          - name: starting and enabling ntp server in ubuntu
+            service:
+                    name: ntp
+                    state: started 
+                    enabled: yes 
+            when: ansible_distribution == "Ubuntu"
+
+          - name: Copying ntp configuration file
+            template:
+                  src: templates/ntp.conf_centos.j2
+                  dest: /etc/ntp.conf 
+                  backup: yes     
+            when: ansible_distribution == "CentOS"
+            notify:
+                    - restarting ntp service
+
+          - name: copying ntp configuration file to ubuntu
+            template:
+                  src: templates/ntp.conf_ubuntu.j2
+                  dest: /etc/ntp.conf
+                  backup: yes
+            when: ansible_distribution == "Ubuntu"
+            notify: 
+                    - restarting ntp service for ubuntu
+
+
+  handlers:  
+    
+          - name: restarting ntp service
+            service:
+                    name: ntpd
+                    state: restarted
+                    enabled: yes
+            when: ansible_distribution == "CentOS"
+
+          - name: restarting ntp service for ubuntu
+            service:
+                    name: ntp
+                    state: restarted
+                    enabled: yes
+            when: ansible_distribution == "Ubuntu"
+
+
+    
+
+

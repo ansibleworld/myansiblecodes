@@ -1,0 +1,204 @@
+- name: setup vprofile stack
+  hosts: localhost
+  connection: local 
+  gather_facts: no
+  tasks:
+          - name: import VPC setup variable
+            include_vars: ./bastion_setup
+
+          - name: import VPC setup output
+            include_vars: vars/output_vars
+            
+          - name: import Vprofile variable
+            include_vars: ./vprostack_setup
+
+
+          - name: create a new ec2 key pair
+            ec2_key:
+               name: vprokey
+               region: "{{region}}"
+            register: vprokeyout
+
+          - debug:
+                var: vprokeyout
+
+          - name: store the key
+            copy:
+                content: "{{vprokeyout.key.private_key}}"
+                dest: ./myvprokeypair.pem
+                mode: 0600
+            when: vprokeyout.changed == true
+
+          - name: creating ELB SG
+            ec2_group:
+                    name: vprofile-elb-sg
+                    description: load balancer SG
+                    vpc_id: "{{vpcid}}"
+                    region: "{{region}}"
+                    purge_rules: no
+                    rules:
+                       - proto: tcp
+                         from_port: 80
+                         to_port: 80
+                         cidr_ip: 0.0.0.0/0
+            register: vprofileelbsg
+
+          - name: creating sg for instances
+            ec2_group:
+                    name: vpro-ec2-sg
+                    description: instance SG
+                    vpc_id: "{{vpcid}}"
+                    region: "{{region}}"
+                    purge_rules: no
+                    rules:
+                      - proto: tcp
+                        from_port: 80
+                        to_port: 80
+                        group_id: "{{vprofileelbsg.group_id}}"
+            
+                      - proto: tcp
+                        from_port: 22
+                        to_port: 22
+                        group_id: "{{bastionSG}}"
+            register: vproec2sg
+
+          - name: create SG within SG
+            ec2_group:
+                    name: vpro-ec2-sg
+                    description: allowing all ports within SG
+                    vpc_id: "{{vpcid}}"
+                    region: "{{region}}"
+                    purge_rules: no
+                    rules:
+                       - proto: all
+                         group_id: "{{vproec2sg.group_id}}"
+  
+            register: vproec2allsg
+
+          - name: creating nginx web01
+            ec2:
+                  key_name: vprokey
+                  instance_type: t2.micro
+                  region: "{{region}}"
+                  image: "{{nginx_ami}}"
+                  wait: yes
+                  wait_timeout: 500
+                  instance_tags:
+                          Name: web01
+                          Project: vprofile
+                          Owner: Devops Team
+                  exact_count: 1
+                  count_tag:
+                          Name: web01
+                          Project: vprofile
+                          Owner: Devops Team
+                  group_id: "{{vproec2sg.group_id}}"
+                  vpc_subnet_id: "{{privsub1id}}"
+            register: web01_out
+
+          - name: creating tomcat app01
+            ec2:
+                  key_name: vprokey
+                  instance_type: t2.micro
+                  region: "{{region}}"
+                  image: "{{tomcat_ami}}"
+                  wait: yes
+                  wait_timeout: 500
+                  instance_tags:
+                          Name: app01
+                          Project: vprofile
+                          Owner: Devops Team
+                  exact_count: 1
+                  count_tag:
+                          Name: app01
+                          Project: vprofile
+                          Owner: Devops Team
+                  group_id: "{{vproec2sg.group_id}}"
+                  vpc_subnet_id: "{{privsub1id}}"
+            register: app01_out
+
+          - name: creating memcache mc01
+            ec2:
+                  key_name: vprokey
+                  instance_type: t2.micro
+                  region: "{{region}}"
+                  image: "{{memcache_ami}}"
+                  wait: yes
+                  wait_timeout: 500
+                  instance_tags:
+                          Name: mc01
+                          Project: vprofile
+                          Owner: Devops Team
+                  exact_count: 1
+                  count_tag:
+                          Name: mc01
+                          Project: vprofile
+                          Owner: Devops Team
+                  group_id: "{{vproec2sg.group_id}}"
+                  vpc_subnet_id: "{{privsub1id}}"
+            register: mc01_out
+
+          - name: creating Rabbitmq rmq01
+            ec2:
+                  key_name: vprokey
+                  instance_type: t2.micro
+                  region: "{{region}}"
+                  image: "{{rmq_ami}}"
+                  wait: yes
+                  wait_timeout: 500
+                  instance_tags:
+                          Name: rmq01
+                          Project: vprofile
+                          Owner: Devops Team
+                  exact_count: 1
+                  count_tag:
+                          Name: rmq01
+                          Project: vprofile
+                          Owner: Devops Team
+                  group_id: "{{vproec2sg.group_id}}"
+                  vpc_subnet_id: "{{privsub1id}}"
+            register: rmq01_out
+
+          - name: creating mysql db01
+            ec2:
+                  key_name: vprokey
+                  instance_type: t2.micro
+                  region: "{{region}}"
+                  image: "{{mysql_ami}}"
+                  wait: yes
+                  wait_timeout: 500
+                  instance_tags:
+                          Name: db01
+                          Project: vprofile
+                          Owner: Devops Team
+                  exact_count: 1
+                  count_tag:
+                          Name: db01
+                          Project: vprofile
+                          Owner: Devops Team
+                  group_id: "{{vproec2sg.group_id}}"
+                  vpc_subnet_id: "{{privsub1id}}"
+            register: db01_out
+          - debug:
+                  var: db01_out.tagged_instances[0].id
+
+          - local_action:
+                 module: ec2_elb_lb
+                 Name: vprofile-elb
+                 region: "{{region}}"
+                 state: present
+                 instance_ids:
+                         - "{{web01_out.tagged_instances[0].id}}"
+                 purge_instance_ids: true
+                 subnets:
+                         - "{{pubsub1id}}"
+                         - "{{pubsub2id}}"
+                         - "{{pubsub3id}}"
+     
+                 listeners:
+                         - protocol: http # options are http, https, ssl, tcp
+                           load_balancer_port: 80
+                           instance_port: 80
+
+
+

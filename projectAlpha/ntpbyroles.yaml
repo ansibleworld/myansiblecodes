@@ -1,0 +1,4 @@
+- name: setup ntp server
+  hosts: all
+  become: yes
+  - role: geerlingguy.ntp

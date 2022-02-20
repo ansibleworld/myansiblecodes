@@ -1,0 +1,41 @@
+---
+- name: setup_db_svc
+  hosts: dbgrp
+  become: yes 
+  vars:
+          dbname: winter
+          dbuser: ashish 
+          dbpass: Airtel@123
+  tasks:
+           - name: install mariadb
+             yum:
+                     name: mariadb-server
+                     state: present
+            
+           - name: installing MySQL-python
+             yum:
+                  name: MySQL-python
+                  state: present
+
+           - name: installing MySQL-python
+             yum:
+                  name: MySQL-python
+                  state: present        
+
+           - name : enable and start svc
+             service:
+                     name: mariadb
+                     state: started
+                     enabled: yes
+
+           - name: create a database accounts
+             mysql_db:
+                      name: "{{dbname}}"
+                      state: present
+
+           - name: Create database user
+             mysql_user:
+                     name: "{{dbuser}}"
+                     password: "{{dbpass}}"
+                     priv: '*.*:ALL'
+                     state: present

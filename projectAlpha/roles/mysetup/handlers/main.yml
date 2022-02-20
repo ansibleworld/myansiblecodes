@@ -1,0 +1,16 @@
+---
+# handlers file for mysetup
+
+  - name: restarting ntp service
+    service:
+            name: ntpd
+            state: restarted
+            enabled: yes
+    when: ansible_distribution == "CentOS"
+
+  - name: restarting ntp service for ubuntu
+    service:
+            name: ntp
+            state: restarted
+            enabled: yes
+    when: ansible_distribution == "Ubuntu"

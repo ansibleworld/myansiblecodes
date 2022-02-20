@@ -1,0 +1,35 @@
+---
+- name: Setup web svc
+  hosts: webgrp
+  become: yes
+  tasks:
+          - name: install httpd
+            yum:
+                   name: httpd
+                   state: present
+
+          - name: enable and start svc
+            service:
+                    name: httpd
+                    state: started
+                    enabled: yes
+
+          - name: Copy index file
+            copy:
+                 src: files/index.html
+                 dest: /var/www/html
+
+- name: setup_db_svc
+  hosts: dbgrp
+  become: yes 
+  tasks:
+           - name: install mariadb
+             yum:
+                     name: mariadb-server
+                     state: present
+
+           - name: enable and start svc
+             service:
+                     name: mariadb
+                     state: started
+                     enabled: yes
